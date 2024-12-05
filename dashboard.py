@@ -423,6 +423,7 @@ if menu_options == "🌏 Plot 2: Tuition Rates Across the U.S.":
 # 📈Plot 3: Average Faculty Salary Over Time
 if menu_options == "📊 Plot 3: Average Faculty Salary Over Time":
     st.subheader("📊 Plot 3: Average Faculty Salary Over Time")
+    st.markdown("**Note:** The ten institutions shown here are selected based on A's personal interest, not based on ranking.")
 
     # Define opeids for UNC, CMU, and Harvard
     selected_opeids = [
