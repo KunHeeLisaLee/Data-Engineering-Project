@@ -271,21 +271,21 @@ if menu_options == "🗒️ Table 5: Admission and Students":
 
     # Query to join institution and admission tables
     query_tb5 = """
-        SELECT
-            institution.INSTNM AS institution_name,
-            admission.adm_rate, admission.satvrmid,
-            admission.year,
-            graduation.ugnonds, graduation.grads
-        FROM admission
-        LEFT JOIN institution
-        ON admission.opeid = institution.opeid
-        LEFT JOIN graduation
-        ON admission.opeid = graduation.opeid
-        AND admission.year = graduation.year
-        WHERE admission.adm_rate IS NOT NULL
-        AND admission.year = %s
-        ORDER BY adm_rate DESC
-        LIMIT 10;
+            SELECT
+                institution.INSTNM AS institution_name,
+                admission.adm_rate, admission.satvrmid,
+                admission.year, 
+                graduation.ugnonds, graduation.grads
+            FROM admission
+            LEFT JOIN institution
+            ON admission.opeid = institution.opeid
+            LEFT JOIN graduation
+            on admission.opeid = graduation.opeid
+            and admission.year = graduation.year
+            WHERE (admission.adm_rate IS NOT NULL AND admission.adm_rate <1)
+            AND (graduation.grads IS NOT NULL AND graduation.grads > 0)
+            AND (graduation.ugnonds IS NOT NULL AND graduation.ugnonds > 0)
+            ORDER BY adm_rate DESC;
     """
 
     cursor.execute(query_tb5, (selected_year,))
@@ -392,7 +392,7 @@ if menu_options == "📈Plot 1: Trends in Tuition and Loan Repayment Rates":
     st.pyplot(plt)
 
 if menu_options == "🌏 Plot 2: Tuition Rates Across the U.S.":
-    st.subheader("🌏 Plot 2: Tuition Rates Across the U.S.")
+    st.subheader("🌏 Plot 2: In-State Tuition Rates Across the U.S.")
 
     query_pl2 = """
     SELECT
@@ -410,6 +410,35 @@ if menu_options == "🌏 Plot 2: Tuition Rates Across the U.S.":
     WHERE tuition.year = %s;
     """
     cursor.execute(query_pl2, (selected_year,))
+    data = cursor.fetchall()
+    columns = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(data, columns=columns)
+    df = df.rename(columns={"longitud": "longitude"})
+
+    map_data = df.dropna(subset=["latitude", "longitude"])
+    map_data["latitude"] = map_data["latitude"].apply(float)
+    map_data["longitude"] = map_data["longitude"].apply(float)
+    st.map(map_data, size="tuitionfee_in")
+
+
+    st.subheader("🌏 Plot 2: Out-of-State Tuition Rates Across the U.S.")
+
+    query_pl21 = """
+    SELECT
+        institution.INSTNM,
+        institution.control,
+        institution.region,
+        institution.latitude,
+        institution.longitud,
+        tuition.tuitionfee_out,
+        tuition.COSTT4_A,
+        tuition.year
+    FROM tuition
+    LEFT JOIN institution
+    ON tuition.opeid = institution.opeid
+    WHERE tuition.year = %s;
+    """
+    cursor.execute(query_pl21, (selected_year,))
     data = cursor.fetchall()
     columns = [desc[0] for desc in cursor.description]
     df = pd.DataFrame(data, columns=columns)
