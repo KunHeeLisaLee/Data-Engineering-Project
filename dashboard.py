@@ -323,7 +323,7 @@ if menu_options == "📈Plot 1: Trends in Tuition and Loan Repayment Rates":
     ax1.tick_params(axis="y", labelcolor="blue")
 
     ax2 = ax1.twinx()
-    ax2.set_ylabel("Average Loan Repayment Rate (%)", color="orange")
+    ax2.set_ylabel("Average Loan Repayment Rate", color="orange")
     ax2.plot(df2["year"], df2["avg_loan_repayment_rate"], color="orange", label="Repayment Rate")
     ax2.tick_params(axis="y", labelcolor="orange")
 
