@@ -21,10 +21,10 @@ menu_options = st.sidebar.radio(
     options=["🗒️ Table 1: Overview of Dataset", "🗒️ Table 2: Number of Institutions by Type and Region",
              "🗒️ Table 3: Tuition Rates by State and CC", "🗒️ Table 4: Loan Repayment Performance",
              "🗒️ Table 5: Admission and Students", "📈Plot 1: Trends in Tuition and Loan Repayment Rates",
-             "🌏 Plot 2: Tuition Rates Across the U.S."]
+             "🌏 Plot 2: Tuition Rates Across the U.S.", "📊 Plot 3: Average Faculty Salary Over Time"]
 )
 
-#need to add: "📈Plot 3: Academic and Earnings Insights", "📈Plot 4: Faculty and Graduation Trends"
+#need to add: "📈Plot 3: Academic and Earnings Insights"
 
 # create a dropdown for year selection
 selected_year = st.selectbox(
@@ -106,7 +106,6 @@ if menu_options == "🗒️ Table 1: Overview of Dataset":
         df_institution = pd.DataFrame(data, columns=columns)
 
         # Display the data in Streamlit
-        st.write("### Table (Filtered by Specific OPEIDs)")
         st.write(df_institution)
 
     except Exception as e:
@@ -213,15 +212,15 @@ if menu_options == "🗒️ Table 4: Loan Repayment Performance":
 
     # top 5 query
     query_top_5 = """
-    SELECT 
-        Institution.instnm AS institution_name, 
+    SELECT
+        Institution.instnm AS institution_name,
         AVG(Loan.dbrr5_fed_ug_rt) AS avg_loan_repayment_rate,
         'Best Performing' AS performance_category
-    FROM Tuition 
-    LEFT JOIN Loan ON Tuition.opeid = Loan.opeid 
+    FROM Tuition
+    LEFT JOIN Loan ON Tuition.opeid = Loan.opeid
     LEFT JOIN Institution ON Tuition.opeid = Institution.opeid
-    WHERE 
-        Tuition.year = %s 
+    WHERE
+        Tuition.year = %s
         AND Loan.dbrr5_fed_ug_rt > 0
     GROUP BY Institution.instnm
     ORDER BY avg_loan_repayment_rate DESC
@@ -230,15 +229,15 @@ if menu_options == "🗒️ Table 4: Loan Repayment Performance":
 
     # bottom q5 query
     query_bottom_5 = """
-    SELECT 
-        Institution.instnm AS institution_name, 
+    SELECT
+        Institution.instnm AS institution_name,
         AVG(Loan.dbrr5_fed_ug_rt) AS avg_loan_repayment_rate,
         'Worst Performing' AS performance_category
-    FROM Tuition 
-    LEFT JOIN Loan ON Tuition.opeid = Loan.opeid 
+    FROM Tuition
+    LEFT JOIN Loan ON Tuition.opeid = Loan.opeid
     LEFT JOIN Institution ON Tuition.opeid = Institution.opeid
-    WHERE 
-        Tuition.year = %s 
+    WHERE
+        Tuition.year = %s
         AND Loan.dbrr5_fed_ug_rt > 0
     GROUP BY Institution.instnm
     ORDER BY avg_loan_repayment_rate ASC
@@ -248,18 +247,18 @@ if menu_options == "🗒️ Table 4: Loan Repayment Performance":
     try:
         cursor.execute(query_top_5, (selected_year,))
         top_5_data = cursor.fetchall()
-        
+
         cursor.execute(query_bottom_5, (selected_year,))
         bottom_5_data = cursor.fetchall()
-      
+
         columns = [desc[0] for desc in cursor.description]
-        
+
         df_top_5 = pd.DataFrame(top_5_data, columns=columns)
         df_bottom_5 = pd.DataFrame(bottom_5_data, columns=columns)
-        
+
         st.write("### Top 5 Best Performing Institutions")
         st.dataframe(df_top_5)
-        
+
         st.write("### Top 5 Worst Performing Institutions")
         st.dataframe(df_bottom_5)
 
@@ -389,7 +388,7 @@ if menu_options == "📈Plot 1: Trends in Tuition and Loan Repayment Rates":
         hue="institution_name",
         marker="o",
         palette="tab10"
-    ).set(title="Loan Repayment Trends", ylabel="Repayment Rate (%)")
+    ).set(title="Loan Repayment Trends", ylabel="Repayment Rate")
     st.pyplot(plt)
 
 if menu_options == "🌏 Plot 2: Tuition Rates Across the U.S.":
@@ -420,6 +419,70 @@ if menu_options == "🌏 Plot 2: Tuition Rates Across the U.S.":
     map_data["latitude"] = map_data["latitude"].apply(float)
     map_data["longitude"] = map_data["longitude"].apply(float)
     st.map(map_data, size="tuitionfee_in")
+
+# 📈Plot 3: Average Faculty Salary Over Time
+if menu_options == "📊 Plot 3: Average Faculty Salary Over Time":
+    st.subheader("📊 Plot 3: Average Faculty Salary Over Time")
+
+    # Define opeids for UNC, CMU, and Harvard
+    selected_opeids = [
+        "00324200",  # CMU
+        "00297400",  # UNC
+        "00215500",  # Harvard
+        "00131500",  # UCLA
+        "00144500",  # Georgetown
+        "00130500",  # Stanford
+        "00185600",  # Cornell
+        "00278500",  # NYU
+        "00142600",  # Yale
+        "00340100"   # Brown
+    ]
+    placeholders = ', '.join(['%s'] * len(selected_opeids))
+
+    # Query to fetch average faculty salary over time
+    query_pl3 = f"""
+    SELECT
+        faculty.year,
+        faculty.avgfacsal AS avg_faculty_salary,
+        institution.instnm AS institution_name
+    FROM Faculty
+    LEFT JOIN institution
+    ON faculty.opeid = institution.opeid
+    WHERE faculty.opeid IN ({placeholders})
+    ORDER BY faculty.year, institution.instnm;
+    """
+
+    # Execute the query
+    try:
+        query_params = selected_opeids
+        cursor.execute(query_pl3, query_params)
+        data = cursor.fetchall()
+
+        # Create DataFrame
+        columns = [desc[0] for desc in cursor.description]
+        df_faculty = pd.DataFrame(data, columns=columns)
+
+        if not df_faculty.empty:
+            # Plotting the trends for selected institutions
+            plt.figure(figsize=(12, 8))
+            sns.lineplot(
+                data=df_faculty,
+                x="year",
+                y="avg_faculty_salary",
+                hue="institution_name",
+                marker="o",
+                palette="tab10"
+            ).set(
+                title="Average Faculty Salary Trends Over Time",
+                xlabel="Year",
+                ylabel="Average Faculty Salary ($)"
+            )
+            st.pyplot(plt)
+        else:
+            st.warning("No data available for the selected institutions and years.")
+
+    except Exception as e:
+        st.error(f"Error executing the query for Plot 3: {e}")
 
 
 # close database connection
