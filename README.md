@@ -1,4 +1,5 @@
 # :school: Team-Alexandria (w College Data)
+Personal repository for group project from CMU's Data Engineering and Distributed Environments course [36-614], taught by Pf. Alex Reinhart.
 
 ## Streamlit Dashboard
 You can access the Streamlit dashboard [here](https://team-alexandria-ew7dyqwbyetmvn2czd2ard.streamlit.app/) to better understand our data.
